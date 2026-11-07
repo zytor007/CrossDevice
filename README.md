@@ -4,7 +4,6 @@
 
 一套面向局域网的多机协同工具：把另一台电脑的屏幕接在你的屏幕边缘，让鼠标键盘、剪贴板和文件像在本机一样流动。传输链路使用 QUIC 双向 TLS、证书指纹固定和 6 位 SAS 人工配对，不依赖公网中继。
 
-[![CI](https://github.com/zytor007/CrossDevice/actions/workflows/ci.yml/badge.svg)](https://github.com/zytor007/CrossDevice/actions/workflows/ci.yml)
 ![rust](https://img.shields.io/badge/rust-1.80%2B-orange)
 ![license](https://img.shields.io/badge/license-MIT-green)
 ![platform](https://img.shields.io/badge/platform-Linux%20X11%20%7C%20Windows%20check%20%7C%20macOS%20planned-lightgrey)
