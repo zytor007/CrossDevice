@@ -1,0 +1,17 @@
+[package]
+name = "cd-ui"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "Crossdev desktop shell that hosts the daemon console"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+
+[[bin]]
+name = "crossdev-ui"
+path = "src/main.rs"
+

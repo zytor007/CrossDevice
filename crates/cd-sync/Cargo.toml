@@ -1,0 +1,18 @@
+[package]
+name = "cd-sync"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "Network sync: SAS pairing, clipboard C2 blobs and directory chunk transfer"
+
+[dependencies]
+cd-proto.workspace = true
+cd-transport.workspace = true
+cd-clipboard.workspace = true
+cd-files.workspace = true
+blake3.workspace = true
+sha2.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+getrandom.workspace = true
+tokio.workspace = true

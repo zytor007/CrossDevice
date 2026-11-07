@@ -1,0 +1,1551 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>跨设备协同 · 高保真原型 v0.2</title>
+<style>
+  :root{
+    --bg:#0b1220; --bg2:#111c31; --panel:#141f36; --panel2:#1a2947;
+    --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.14);
+    --gold:#d8b46a; --gold2:#f0d79a; --amber:#e08b3c;
+    --text:#e8edf7; --muted:#9aabc7; --dim:#7386a6;
+    --green:#3ecf8e; --red:#e05d5d; --blue:#6aa8ff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  [hidden]{display:none!important}
+  button,select,input{font-family:inherit}
+  body{
+    font-family:"PingFang SC","Noto Sans SC","Microsoft YaHei",system-ui,sans-serif;
+    background:radial-gradient(1200px 700px at 20% 0%,#16233c 0%,#0a0f1b 55%,#070b13 100%);
+    color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;
+    padding:24px 18px;-webkit-font-smoothing:antialiased;
+  }
+  :focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  .win{
+    position:relative;width:min(1160px,100%);height:min(860px,94vh);display:flex;flex-direction:column;
+    background:linear-gradient(180deg,var(--bg2),var(--bg) 60%);
+    border:1px solid var(--line2);border-radius:16px;overflow:hidden;
+    box-shadow:0 40px 90px -30px rgba(0,0,0,.85),inset 0 1px 0 rgba(255,255,255,.06);
+  }
+  .titlebar{
+    height:46px;display:flex;align-items:center;padding:0 16px;gap:12px;
+    border-bottom:1px solid var(--line);background:rgba(255,255,255,.02);flex-shrink:0;
+  }
+  .logo{width:24px;height:24px;border-radius:6px;background:linear-gradient(135deg,var(--gold),var(--amber));display:grid;place-items:center;font-size:11px;color:#20160a;font-weight:700;cursor:pointer;flex-shrink:0}
+  .brand{font-size:13px;letter-spacing:2px;color:var(--gold2);font-weight:600;white-space:nowrap}
+  .brand small{display:block;font-size:9px;letter-spacing:3px;color:var(--dim);font-weight:400}
+  .titlebar .spacer{flex:1}
+  .status-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);flex-shrink:0}
+  .tb-note{font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:7px;min-width:0}
+  .tb-note span:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tb-btn{border:1px solid var(--line2);background:rgba(255,255,255,.04);color:var(--muted);width:26px;height:26px;border-radius:7px;cursor:pointer;font-size:12px;line-height:1;display:grid;place-items:center;flex-shrink:0}
+  .tb-btn:hover{color:var(--gold2);border-color:rgba(216,180,106,.4)}
+  .win-btns{display:flex;gap:8px;margin-left:8px;flex-shrink:0}
+  .win-btns span{width:11px;height:11px;border-radius:50%;background:#3a4660}
+  .win-btns span:hover{background:var(--gold)}
+  .tabs{display:flex;gap:4px;padding:12px 16px 0;border-bottom:1px solid var(--line);flex-shrink:0}
+  .tab{
+    padding:9px 18px;font-size:13px;color:var(--muted);cursor:pointer;border-radius:8px 8px 0 0;
+    border:1px solid transparent;border-bottom:none;position:relative;transition:.18s;background:transparent;
+  }
+  .tab:hover{color:var(--text)}
+  .tab.on{color:var(--gold2);background:rgba(216,180,106,.07);border-color:var(--line2)}
+  .tab.on::after{content:"";position:absolute;left:14%;right:14%;bottom:-1px;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+  .body{flex:1;overflow:auto;padding:18px 22px 0;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.18) transparent}
+  .page{display:none;animation:fade .24s ease}
+  .page.on{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+  .h1{font-size:11px;letter-spacing:3px;color:var(--dim);text-transform:uppercase;margin-bottom:12px}
+  .h2{font-size:14.5px;font-weight:600;margin-bottom:6px}
+  .sub{font-size:11.5px;color:var(--muted);line-height:1.6}
+  .center{text-align:center}
+  .card{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:12px;padding:15px}
+  .row{display:flex;align-items:center;gap:10px}
+  .banner{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    background:rgba(224,139,60,.09);border:1px solid rgba(224,139,60,.26);color:#f2c08a;
+    padding:10px 13px;border-radius:9px;font-size:11.5px;line-height:1.5;margin-bottom:14px;
+  }
+  .banner.soft{background:rgba(216,180,106,.06);border-color:rgba(216,180,106,.2);color:var(--gold2);margin-bottom:14px}
+  /* 设备页 */
+  .devices-grid{display:grid;grid-template-columns:370px minmax(0,1fr);gap:20px;align-items:start}
+  .dev{display:flex;align-items:center;gap:10px;padding:11px 12px;border:1px solid var(--line);border-radius:11px;margin-bottom:9px;background:linear-gradient(180deg,rgba(255,255,255,.03),transparent);transition:.16s;cursor:pointer;position:relative}
+  .dev:hover{border-color:var(--line2);background:rgba(255,255,255,.04)}
+  .dev.active{border-color:rgba(216,180,106,.45);background:linear-gradient(90deg,rgba(216,180,106,.1),rgba(216,180,106,.02))}
+  .dev.offline{opacity:.52;cursor:default}
+  .dev .ico{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;font-size:16px;background:rgba(255,255,255,.05);border:1px solid var(--line);flex-shrink:0}
+  .dev .meta{flex:1;min-width:0}
+  .dev .name{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dev .dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);display:inline-block;margin-left:6px;vertical-align:2px}
+  .dev .det{font-size:10.5px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dev .pills{display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0}
+  .dev .more{border:none;background:transparent;color:var(--dim);cursor:pointer;font-size:15px;padding:2px 4px;border-radius:5px;flex-shrink:0}
+  .dev .more:hover{color:var(--gold2);background:rgba(255,255,255,.06)}
+  .tag-local{font-size:9.5px;padding:1px 5px;border:1px solid rgba(216,180,106,.34);border-radius:4px;color:var(--gold);margin-left:4px;vertical-align:1px;font-weight:400}
+  .pill{font-size:10px;padding:3px 8px;border-radius:20px;border:1px solid;white-space:nowrap;line-height:1.3}
+  .pill.on{color:var(--green);border-color:rgba(62,207,142,.35);background:rgba(62,207,142,.08)}
+  .pill.off{color:var(--dim);border-color:var(--line2);background:rgba(255,255,255,.03)}
+  .pill.cur{color:var(--gold2);border-color:rgba(216,180,106,.4);background:rgba(216,180,106,.1)}
+  .pill.bad{color:var(--red);border-color:rgba(224,93,93,.35);background:rgba(224,93,93,.08)}
+  .btn{border:1px solid var(--line2);background:rgba(255,255,255,.05);color:var(--text);font-size:12px;padding:8px 14px;border-radius:8px;cursor:pointer;transition:.16s}
+  .btn:hover{background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.25)}
+  .btn.gold{background:linear-gradient(135deg,var(--gold),#c49a4d);color:#1d1508;border-color:transparent;font-weight:600}
+  .btn.gold:hover{filter:brightness(1.08)}
+  .btn.ghost{background:transparent}
+  .btn.danger{color:var(--red);border-color:rgba(224,93,93,.35);background:rgba(224,93,93,.05)}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .tools{display:flex;gap:9px;margin-top:14px;flex-wrap:wrap}
+  .tools .btn{flex:1}
+  /* 适配卡片 */
+  .adapt{margin-top:16px;padding:12px 14px}
+  .adapt .adapt-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:4px 0;font-size:11px;color:var(--muted)}
+  .adapt .adapt-row b{color:var(--text);font-size:11px;font-weight:500}
+  .adapt-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:7px}
+  .adapt-grid div{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:7px;padding:6px 7px;min-width:0}
+  .adapt-grid span{display:block;font-size:9.5px;color:var(--dim);white-space:nowrap}
+  .adapt-grid b{display:block;font-size:11px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .adapt-note{font-size:10px;color:var(--muted);line-height:1.5;margin-top:6px}
+  .adapt-actual{font-size:10px;color:var(--muted);margin-top:4px;line-height:1.5}
+  .adapt-actual b{color:var(--gold2);font-weight:500}
+  .sel.small{font-size:10.5px;padding:5px 8px;max-width:170px}
+  /* 布局编辑器 */
+  .layout-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:2px}
+  .layout-head .sub{margin-top:2px}
+  .canvas{
+    position:relative;height:440px;max-width:740px;margin:2px auto 0;border-radius:12px;
+    border:1px dashed rgba(216,180,106,.22);
+    background:
+      radial-gradient(circle at 30% 20%,rgba(216,180,106,.06),transparent 60%),
+      repeating-linear-gradient(0deg,rgba(255,255,255,.022) 0 1px,transparent 1px 28px),
+      repeating-linear-gradient(90deg,rgba(255,255,255,.022) 0 1px,transparent 1px 28px);
+    overflow:hidden;
+  }
+  .canvas::after{content:"PHYSICAL LAYOUT · 1:1";position:absolute;right:10px;bottom:8px;font-size:9px;letter-spacing:1.5px;color:rgba(255,255,255,.17);pointer-events:none}
+  .screen{
+    position:absolute;width:var(--w);aspect-ratio:var(--ratio);padding:9px;border-radius:10px;cursor:grab;
+    border:1px solid rgba(216,180,106,.4);background:linear-gradient(160deg,rgba(30,44,70,.96),rgba(18,28,46,.96));
+    box-shadow:0 16px 34px -14px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.07);
+    user-select:none;touch-action:none;overflow:hidden;display:flex;flex-direction:column;
+    transition:box-shadow .15s,border-color .15s;z-index:2;
+  }
+  .screen.local{border-color:rgba(216,180,106,.62)}
+  .screen:hover{border-color:var(--gold);box-shadow:0 18px 40px -12px rgba(216,180,106,.25)}
+  .screen.dragging{cursor:grabbing;border-color:var(--gold);box-shadow:0 22px 46px -12px rgba(216,180,106,.34);z-index:5}
+  .screen .sn{display:flex;justify-content:space-between;align-items:center;font-size:11.5px;font-weight:600;gap:6px;white-space:nowrap}
+  .screen .sn .tag-local{font-size:8.5px;padding:0 4px}
+  .screen .sd{font-size:9.5px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .screen .sb{flex:1;min-height:22px;border-radius:6px;margin-top:7px;background:linear-gradient(135deg,#26364f,#1b2637);border:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:9px;color:var(--dim);letter-spacing:.8px;overflow:hidden}
+  .screen .sb b{font-size:10px;color:var(--muted);font-weight:500;letter-spacing:.3px}
+  .screen .sc{font-size:9.5px;color:var(--gold);margin-top:5px;letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .screen.unpaired{opacity:.45}
+  .edge{position:absolute;display:none;background:linear-gradient(180deg,transparent,var(--gold),transparent);box-shadow:0 0 14px rgba(216,180,106,.55);border-radius:2px;pointer-events:none;z-index:4}
+  .edge.h{background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+  .scalebar{position:absolute;left:12px;bottom:10px;display:flex;align-items:center;gap:7px;font-size:9px;color:var(--dim);letter-spacing:1px;pointer-events:none;z-index:6}
+  .scalebar i{display:block;height:2px;background:rgba(216,180,106,.55);width:78px;position:relative}
+  .scalebar i::before,.scalebar i::after{content:"";position:absolute;top:-3px;width:1px;height:8px;background:rgba(216,180,106,.55)}
+  .scalebar i::before{left:0}.scalebar i::after{right:0}
+  .hint{margin-top:4px;font-size:11px;color:var(--muted);background:rgba(216,180,106,.06);border:1px solid rgba(216,180,106,.16);padding:5px 10px;border-radius:9px;line-height:1.6}
+  .layout-warn{margin-top:8px;font-size:11px;color:#f2a08a;background:rgba(224,93,93,.07);border:1px solid rgba(224,93,93,.22);padding:7px 10px;border-radius:8px}
+  .opts{display:flex;gap:12px;align-items:center;margin-top:2px;flex-wrap:wrap}
+  .opt{font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .shared-label{font-size:10.5px;color:var(--gold2);margin-top:2px}
+  .chip{
+    font-family:inherit;font-size:11px;padding:4px 9px;border-radius:6px;border:1px solid var(--line2);
+    color:var(--muted);background:transparent;cursor:pointer;transition:.15s;white-space:nowrap;
+  }
+  .chip:hover{border-color:rgba(255,255,255,.26);color:var(--text)}
+  .chip.on{color:var(--gold2);border-color:rgba(216,180,106,.4);background:rgba(216,180,106,.1)}
+  .chip.val{color:var(--text);background:rgba(255,255,255,.04)}
+  .chip.val::after{content:" ▾";color:var(--dim);font-size:9px}
+  .chip.noarrow::after{content:""}
+  .chip.disabled{opacity:.32;cursor:not-allowed}
+  .chip.disabled:hover{border-color:var(--line2);color:var(--muted)}
+  .chip.bad{color:var(--red);border-color:rgba(224,93,93,.35);background:rgba(224,93,93,.05)}
+  /* 剪贴板 */
+  .search{flex:1;background:rgba(255,255,255,.04);border:1px solid var(--line);color:var(--text);padding:10px 14px;border-radius:9px;font-size:12px;outline:none}
+  .search:focus{border-color:rgba(216,180,106,.45)}
+  .filter{display:flex;gap:8px;margin:12px 0 8px;flex-wrap:wrap;align-items:center}
+  .clip{display:flex;gap:12px;padding:12px 14px;border-bottom:1px solid var(--line);cursor:pointer;transition:.15s;align-items:center}
+  .clip:hover{background:rgba(255,255,255,.035)}
+  .clip .t{width:34px;height:26px;border-radius:6px;display:grid;place-items:center;font-size:9.5px;border:1px solid var(--line2);color:var(--gold);background:rgba(216,180,106,.07);flex-shrink:0;letter-spacing:.5px}
+  .clip .c{flex:1;min-width:0}
+  .clip .title{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .clip .meta{font-size:10.5px;color:var(--dim);margin-top:4px;display:flex;gap:10px;flex-wrap:wrap}
+  .clip .src{font-size:10px;color:var(--muted);flex-shrink:0}
+  .clip .pin{color:var(--gold);margin-left:4px;font-size:10px}
+  .empty{border:1px dashed var(--line2);border-radius:10px;padding:26px;text-align:center;color:var(--muted);font-size:12.5px;line-height:1.8}
+  .empty small{color:var(--dim);font-size:10.5px}
+  /* 传输 */
+  .tr{padding:13px 15px;border:1px solid var(--line);border-radius:11px;margin-bottom:10px;background:linear-gradient(180deg,rgba(255,255,255,.03),transparent)}
+  .tr.failed{border-color:rgba(224,93,93,.26);background:rgba(224,93,93,.04)}
+  .tr .top{display:flex;justify-content:space-between;align-items:center;font-size:12px;gap:12px}
+  .tr .nm{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tr .st{font-size:10.5px;color:var(--muted);white-space:nowrap;flex-shrink:0}
+  .tr .st.warn{color:var(--amber)}
+  .tr .st.bad{color:var(--red)}
+  .bar{height:5px;border-radius:4px;background:rgba(255,255,255,.07);margin:11px 0 8px;overflow:hidden}
+  .bar i{display:block;height:100%;border-radius:4px}
+  .bar i.g{background:linear-gradient(90deg,#b8934f,var(--gold2))}
+  .bar i.a{background:linear-gradient(90deg,#b06f2c,var(--amber))}
+  .bar i.r{background:linear-gradient(90deg,#8e3434,var(--red))}
+  .tr .bot{display:flex;justify-content:space-between;align-items:center;font-size:10.5px;color:var(--muted);gap:12px;flex-wrap:wrap}
+  .tr .acts{display:flex;gap:7px}
+  .mini{font-size:10.5px;padding:4px 9px;border-radius:6px;border:1px solid var(--line2);background:rgba(255,255,255,.04);cursor:pointer;color:var(--text);font-family:inherit}
+  .mini:hover{border-color:rgba(216,180,106,.4);color:var(--gold2)}
+  .mini.danger{color:var(--red);border-color:rgba(224,93,93,.3)}
+  .done{display:flex;justify-content:space-between;padding:10px 4px;border-bottom:1px solid var(--line);font-size:11.5px;color:var(--muted);gap:12px;flex-wrap:wrap}
+  .done em{color:var(--green);font-style:normal}
+  .linkbtn{background:none;border:none;color:var(--gold);cursor:pointer;font-size:11px;padding:0;font-family:inherit}
+  .linkbtn:hover{color:var(--gold2);text-decoration:underline}
+  /* 设置 */
+  .setgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+  .setrow{display:flex;justify-content:space-between;align-items:center;padding:11px 2px;border-bottom:1px solid var(--line);font-size:12px;gap:12px}
+  .setrow:last-child{border-bottom:none}
+  .setrow .d{font-size:10.5px;color:var(--dim);margin-top:3px;line-height:1.5}
+  .switch{width:36px;height:20px;border-radius:20px;background:rgba(255,255,255,.12);position:relative;cursor:pointer;transition:.2s;flex-shrink:0}
+  .switch::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#9fb0cc;transition:.2s}
+  .switch.on{background:rgba(216,180,106,.35)}
+  .switch.on::after{left:18px;background:var(--gold2)}
+  .sel{background:rgba(255,255,255,.04);border:1px solid var(--line2);color:var(--text);padding:6px 10px;border-radius:7px;font-size:11.5px;outline:none}
+  .sel:focus{border-color:rgba(216,180,106,.45)}
+  .permcard{border:1px solid var(--line);border-radius:11px;padding:14px 16px;margin-bottom:10px;background:linear-gradient(180deg,rgba(255,255,255,.03),transparent)}
+  .dp-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding-bottom:8px}
+  .dp-head b{font-size:12.5px}
+  /* 弹窗 */
+  .mask{position:fixed;inset:0;background:rgba(4,7,12,.72);backdrop-filter:blur(6px);display:none;place-items:center;z-index:30;padding:18px}
+  .mask.on{display:grid}
+  .modal{width:min(440px,100%);max-height:90vh;overflow:auto;background:linear-gradient(180deg,#1a2947,#121c30);border:1px solid var(--line2);border-radius:14px;padding:22px;box-shadow:0 40px 90px -30px #000}
+  .modal.wide{width:min(600px,100%)}
+  .wizard{width:min(560px,100%)}
+  .modal h3{font-size:15px;margin-bottom:5px}
+  .modal p{font-size:12px;color:var(--muted);line-height:1.7}
+  .wiz-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px}
+  .steps{display:flex;gap:6px;padding-top:4px}
+  .steps i{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.16)}
+  .steps i.on{background:var(--gold)}
+  .wstep{display:none}
+  .wstep.on{display:block;animation:fade .2s ease}
+  .discover{display:flex;flex-direction:column;gap:8px;margin:14px 0}
+  .devpick{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:rgba(255,255,255,.03);color:var(--text);text-align:left;cursor:pointer;transition:.15s}
+  .devpick:hover{border-color:rgba(216,180,106,.4);background:rgba(216,180,106,.06)}
+  .devpick:disabled{opacity:.42;cursor:not-allowed}
+  .devpick .ico{width:30px;height:30px;border-radius:7px;display:grid;place-items:center;border:1px solid var(--line2);color:var(--gold);background:rgba(216,180,106,.06);flex-shrink:0}
+  .devpick .dpn{flex:1;font-size:12px;min-width:0}
+  .devpick .dpn small{display:block;font-size:10px;color:var(--muted);margin-top:2px}
+  .manual-row{display:flex;gap:8px;align-items:center;font-size:11.5px;color:var(--muted);flex-wrap:wrap}
+  .input{flex:1;min-width:130px;background:rgba(255,255,255,.04);border:1px solid var(--line);color:var(--text);padding:8px 10px;border-radius:7px;font-size:11.5px;outline:none}
+  .input:focus{border-color:rgba(216,180,106,.45)}
+  .tip{font-size:10.5px;color:var(--dim);line-height:1.7;margin-top:12px}
+  .code{display:flex;gap:10px;justify-content:center;margin:20px 0 8px;font-size:26px;letter-spacing:6px;color:var(--gold2);font-weight:600}
+  .code span{padding:8px 4px 8px 12px;border-bottom:2px solid rgba(216,180,106,.35)}
+  .mact{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;flex-wrap:wrap}
+  .success{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;margin:8px auto 14px;font-size:24px;color:var(--green);background:rgba(62,207,142,.1);border:1px solid rgba(62,207,142,.3)}
+  .preview{background:rgba(0,0,0,.22);border:1px solid var(--line);border-radius:8px;padding:11px;font-size:12px;line-height:1.6;max-height:170px;overflow:auto;white-space:pre-wrap;word-break:break-word;margin:10px 0;color:var(--text)}
+  .preview.image{height:130px;display:grid;place-items:center;background:linear-gradient(135deg,#26364f,#1b2637);color:var(--dim);font-size:11px}
+  .preview.file{height:100px;display:grid;place-items:center;background:linear-gradient(135deg,#26364f,#1b2637);color:var(--muted);font-size:11.5px}
+  .meta-line{font-size:10.5px;color:var(--dim);display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+  .perm-list{border:1px solid var(--line);border-radius:9px;padding:4px 12px;margin-top:12px}
+  .perm-list div{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:12px;gap:10px}
+  .perm-list div:last-child{border-bottom:none}
+  .calc-table{border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-top:12px}
+  .calc-table div{display:grid;grid-template-columns:1.1fr 1.4fr 1.4fr;gap:8px;padding:9px 12px;border-bottom:1px solid var(--line);font-size:11px;line-height:1.5}
+  .calc-table div:last-child{border-bottom:none}
+  .calc-table .th{background:rgba(216,180,106,.07);color:var(--gold2);font-weight:600}
+  .calc-table span{color:var(--muted)}
+  .calc-table b{color:var(--text);font-weight:500}
+  /* 托盘 */
+  .tray{position:absolute;top:54px;left:14px;width:286px;background:linear-gradient(180deg,#1c2b49,#111a2d);border:1px solid var(--line2);border-radius:12px;padding:14px;box-shadow:0 24px 60px -18px #000;z-index:20}
+  .tray-head{display:flex;justify-content:space-between;align-items:center;padding-bottom:10px;border-bottom:1px solid var(--line);margin-bottom:8px;font-size:12px}
+  .tray-row{display:flex;align-items:center;gap:8px;padding:7px 2px;font-size:11.5px;color:var(--muted)}
+  .tray-row b{color:var(--text);font-size:11.5px;flex:1}
+  .mini-group{display:flex;gap:5px}
+  .mini-group button{font-size:10px;padding:3px 7px;border-radius:5px;border:1px solid var(--line2);background:rgba(255,255,255,.04);color:var(--muted);cursor:pointer;font-family:inherit}
+  .mini-group button:hover{color:var(--gold2);border-color:rgba(216,180,106,.4)}
+  .tray-sep{height:1px;background:var(--line);margin:8px 0}
+  .tray-item{display:block;width:100%;text-align:left;border:none;background:transparent;color:var(--text);font-size:11.5px;padding:8px 4px;border-radius:6px;cursor:pointer;font-family:inherit}
+  .tray-item:hover{background:rgba(255,255,255,.05);color:var(--gold2)}
+  /* Toast */
+  .toasts{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;z-index:99;align-items:center;pointer-events:none}
+  .toast{background:rgba(20,31,54,.96);border:1px solid var(--line2);color:var(--text);font-size:11.5px;padding:9px 14px;border-radius:8px;box-shadow:0 12px 30px -10px #000;animation:toastin .22s ease;max-width:min(520px,90vw);line-height:1.5}
+  .toast.warn{border-color:rgba(224,139,60,.4);color:#f2c08a}
+  @keyframes toastin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .foot{margin-top:14px;font-size:10px;color:var(--dim);letter-spacing:1.5px;text-align:center}
+  ::-webkit-scrollbar{width:8px;height:8px}
+  ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:4px}
+  @media(max-width:1000px){
+    .devices-grid{grid-template-columns:1fr}
+    .setgrid{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div class="win">
+  <div class="titlebar">
+    <div class="logo" id="logoTray" title="托盘菜单">◈</div>
+    <div class="brand">越界 CROSSEDGE<small>LOCAL COLLABORATION</small></div>
+    <div class="spacer"></div>
+    <div class="tb-note"><span class="status-dot"></span><span id="tbStatus">已连接 2 台 · 输入在 Linux 4K</span></div>
+    <button class="tb-btn" id="quickPause" title="暂停剪贴板同步 15 分钟">⏸</button>
+    <div class="win-btns"><span></span><span></span><span></span></div>
+  </div>
+
+  <div class="tabs" role="tablist" aria-label="主导航">
+    <button class="tab on" data-p="devices" role="tab" aria-selected="true" aria-controls="devices">设备</button>
+    <button class="tab" data-p="clip" role="tab" aria-selected="false" aria-controls="clip">剪贴板</button>
+    <button class="tab" data-p="trans" role="tab" aria-selected="false" aria-controls="trans">传输</button>
+    <button class="tab" data-p="settings" role="tab" aria-selected="false" aria-controls="settings">设置</button>
+  </div>
+
+  <div class="body">
+    <!-- 设备页 -->
+    <div class="page on" id="devices">
+      <div class="h1">Devices / 设备</div>
+
+      <div class="banner" id="permBanner" hidden>
+        <span>输入权限未授予：X11 注入或对端辅助功能不可用，无法切换输入。剪贴板与文件传输仍可用。</span>
+        <button class="mini" id="bannerFix">打开权限向导</button>
+      </div>
+
+      <div class="devices-grid">
+        <div>
+          <div class="sub" style="margin-bottom:10px">已配对设备 · 本机 Linux 4K · 点击在线设备切换输入</div>
+          <div id="deviceList"></div>
+          <div class="tools">
+            <button class="btn gold" id="addDeviceBtn">+ 添加设备</button>
+            <button class="btn ghost js-perm-wizard">权限向导</button>
+          </div>
+
+          <div class="card adapt">
+            <div class="row" style="justify-content:space-between">
+              <div class="h2">分辨率适配</div>
+              <span class="pill on" id="adaptStatus">通过</span>
+            </div>
+            <div class="sub" style="margin:2px 0 4px">本机 4K@2× · 1:1 物理绘制 · 推荐 Air 垂直居中</div>
+            <div class="adapt-row">
+              <span>对端 Air</span>
+              <select class="sel small" id="macModel" aria-label="MacBook Air 尺寸">
+                <option value="air13">13.6" · 2560×1664</option>
+                <option value="air15">15.3" · 2880×1864</option>
+              </select>
+            </div>
+            <div class="adapt-grid">
+              <div><span>逻辑分辨率</span><b id="adaptLogical">1470×956</b></div>
+              <div><span>物理尺寸</span><b id="adaptSize">293×183mm</b></div>
+              <div><span>共享边覆盖</span><b id="adaptCoverage">50.8%</b></div>
+              <div><span>速度倍率</span><b id="adaptSpeed">1.65×</b></div>
+            </div>
+            <div class="adapt-actual" id="adaptActual">有效缩放 <b id="adaptScale">1.74×</b> · 面板 <b id="adaptPpi">224</b> PPI · <span id="adaptActualText">当前有效共享段 50.8%</span></div>
+            <div class="row" style="justify-content:space-between;margin-top:7px">
+              <button class="linkbtn" id="adaptDetail">查看计算过程</button>
+              <button class="mini" id="applyAdapt">应用推荐布局</button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="layout-head">
+            <div>
+              <div class="h2">屏幕布局</div>
+              <div class="sub">按物理尺寸 1:1 绘制 · 共享边只高亮重叠段</div>
+            </div>
+            <div class="row">
+              <button class="mini" id="resetLayout">重置布局</button>
+              <button class="mini" id="detectScreens">检测显示器</button>
+            </div>
+          </div>
+
+          <div class="canvas" id="canvas">
+            <div class="screen local" id="screen-linux" data-device="linux" style="left:0%;top:8%;--w:66.84%;--ratio:631/360">
+              <div class="sn"><span>Linux 4K <span class="tag-local">本机</span></span><span style="color:var(--green);font-size:9px">●</span></div>
+              <div class="sd">3840×2160 · 631×360mm · 2.0×</div>
+              <div class="sb"><span>HDMI-0 · 60Hz</span><b>1920×1080 逻辑</b></div>
+              <div class="sc" id="label-linux">↔ 右侧连接 MACBOOK AIR</div>
+            </div>
+            <div class="screen" id="screen-mac" data-device="mac" style="left:68.96%;top:28%;--w:31.04%;--ratio:293/183">
+              <div class="sn"><span id="macScreenName">MacBook Air 13.6"</span><span style="color:var(--green);font-size:9px">●</span></div>
+              <div class="sd" id="macDetail">2560×1664 · 293×183mm · 1.74×</div>
+              <div class="sb"><span>Liquid Retina</span></div>
+              <div class="sc" id="label-mac">↔ 左侧连接 LINUX 4K</div>
+            </div>
+            <div class="edge" id="edgeIndicator"></div>
+            <div class="scalebar"><i id="scaleBarFill"></i><span>100mm</span></div>
+          </div>
+
+          <div class="layout-warn" id="layoutWarn" hidden>检测到屏幕重叠，请拖开后再保存布局。</div>
+          <div class="shared-label" id="sharedEdgeLabel">共享边：Linux 右 ↔ Air 左 · 183/360mm（50.8%）</div>
+          <div class="hint" id="layoutHint">光标只在共享边重叠段内穿越；其余为死区。拖动 Air 调整垂直位置，推荐居中。</div>
+
+          <div class="opts">
+            <div class="opt">边缘穿越：
+              <button class="chip on" data-edge="left">左</button>
+              <button class="chip on" data-edge="right">右</button>
+              <button class="chip disabled" data-edge="top">上</button>
+              <button class="chip disabled" data-edge="bottom">下</button>
+            </div>
+            <div class="opt">对齐：
+              <button class="chip on" data-align="center">居中</button>
+              <button class="chip" data-align="top">顶部</button>
+              <button class="chip" data-align="bottom">底部</button>
+            </div>
+            <div class="opt">回切 <button class="chip val" data-toast="快捷键录制（演示）">Ctrl + Alt + Home</button></div>
+            <div class="opt"><button class="chip val" data-toast="本机输入优先：Air 物理输入一动即回切">本机输入优先</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- 剪贴板页 -->
+    <div class="page" id="clip">
+      <div class="h1">Clipboard / 剪贴板</div>
+
+      <div class="banner soft" id="pauseBanner" hidden>
+        <span id="pauseText">剪贴板同步已暂停</span>
+        <button class="mini" id="pauseResume">恢复同步</button>
+      </div>
+
+      <div class="row">
+        <input class="search" id="clipSearch" placeholder="搜索文本、文件名、来源设备…">
+        <button class="chip on" id="syncState">同步中</button>
+      </div>
+
+      <div class="filter" id="clipFilters">
+        <button class="chip on" data-type="all">全部</button>
+        <button class="chip" data-type="text">文本</button>
+        <button class="chip" data-type="image">图片</button>
+        <button class="chip" data-type="file">文件</button>
+        <button class="chip" data-type="dir">目录</button>
+        <select class="sel" id="clipSource" aria-label="来源设备" style="margin-left:auto">
+          <option value="all">来源：全部设备</option>
+          <option value="linux">来源：linux-4k</option>
+          <option value="mac">来源：macbook-air-m4</option>
+          <option value="thinkpad">来源：thinkpad</option>
+        </select>
+      </div>
+
+      <div id="clipList"></div>
+      <div class="empty" id="clipEmpty" hidden>没有匹配的条目<br><small>换个关键词，或关闭筛选</small></div>
+      <div class="foot">历史仅存本机 · 本地加密存储 · 默认保留 30 天</div>
+    </div>
+
+    <!-- 传输页 -->
+    <div class="page" id="trans">
+      <div class="h1">Transfers / 传输</div>
+      <div class="sub" id="transSummary"></div>
+      <div id="transActive" style="margin-top:12px"></div>
+      <div class="empty" id="transEmpty" hidden>暂无进行中的传输<br><small>从剪贴板粘贴文件，或拖拽到屏幕边缘</small></div>
+
+      <div class="h1" style="margin-top:24px">Completed / 已完成</div>
+      <div id="doneList"></div>
+    </div>
+
+    <!-- 设置页 -->
+    <div class="page" id="settings">
+      <div class="h1">Settings / 设置</div>
+
+      <div class="setgrid">
+        <div class="card">
+          <div class="h2">常规</div>
+          <div class="setrow"><div>开机自启<div class="d">登录后自动运行，托盘常驻</div></div><div class="switch on"></div></div>
+          <div class="setrow"><div>语言</div>
+            <select class="sel" id="langSelect">
+              <option>简体中文</option>
+              <option>English</option>
+            </select>
+          </div>
+          <div class="setrow"><div>主题<div class="d">v1 仅深色，浅色排入 M4</div></div><button class="chip val" data-toast="浅色主题排入 M4">深色</button></div>
+        </div>
+
+        <div class="card">
+          <div class="h2">输入</div>
+          <div class="setrow"><div>边缘判定延时<div class="d">碰触边界后多久触发穿越，避免误触</div></div><button class="chip val" data-cycle="80 ms|120 ms|160 ms" data-label="边缘延时">80 ms</button></div>
+          <div class="setrow"><div>回切快捷键<div class="d">一键把键鼠拉回本机</div></div><button class="chip val" data-toast="快捷键录制（演示）">Ctrl + Alt + Home</button></div>
+          <div class="setrow"><div>同步修饰键状态<div class="d">切换瞬间同步 Ctrl / Shift / Alt / Meta，避免粘键</div></div><div class="switch on"></div></div>
+          <div class="setrow"><div>全屏应用禁止穿越<div class="d">游戏、演示场景避免误切</div></div><div class="switch on"></div></div>
+        </div>
+
+        <div class="card">
+          <div class="h2">同步</div>
+          <div class="setrow"><div>同步类型</div><span class="pill on">文本 / 图片 / 文件 / 目录</span></div>
+          <div class="setrow"><div>剪贴板内联阈值<div class="d">超过则只同步引用，粘贴时按需接收</div></div><button class="chip val" data-cycle="8 MB|16 MB|32 MB" data-label="内联阈值">8 MB</button></div>
+          <div class="setrow"><div>文件自动拉取阈值<div class="d">小于此值复制后即可粘贴</div></div><button class="chip val" data-cycle="64 MB|128 MB|256 MB" data-label="自动拉取阈值">64 MB</button></div>
+          <div class="setrow"><div>块缓存配额<div class="d">超出后按最久未用清理</div></div><button class="chip val" data-cycle="4 GB|8 GB|16 GB" data-label="块缓存配额">8 GB</button></div>
+          <div class="setrow"><div>历史保留</div><button class="chip val" data-cycle="7 天|30 天|90 天" data-label="历史保留">30 天</button></div>
+        </div>
+
+        <div class="card">
+          <div class="h2">安全</div>
+          <div class="setrow"><div>输入前需本机确认<div class="d">每次其他设备接管键鼠时弹确认</div></div><div class="switch"></div></div>
+          <div class="setrow"><div>可被发现<div class="d">关闭后只能手动 IP 连接</div></div><div class="switch on"></div></div>
+          <div class="setrow"><div>清除本地数据<div class="d">历史、缓存、传输记录</div></div><button class="mini danger" id="clearData">清除</button></div>
+        </div>
+
+        <div class="card">
+          <div class="h2">权限</div>
+          <div class="sub" style="margin-bottom:6px" id="permDeviceLine">本机 linux-4k（Linux X11）· 对端 macbook-air-m4（macOS 15）</div>
+          <div class="setrow"><div>X11 输入捕获/注入</div><button class="chip val" data-perm id="setPermX11">已就绪</button></div>
+          <div class="setrow"><div>全局快捷键</div><button class="chip val" data-perm id="setPermShortcut">已就绪</button></div>
+          <div class="setrow"><div>Wayland portal<div class="d">24.04+；当前会话 X11，未启用</div></div><span class="chip val noarrow" style="cursor:default">未启用</span></div>
+          <div class="setrow"><div>对端 macOS 辅助功能</div><button class="chip val" data-perm id="setPermMac">已授权</button></div>
+          <div class="setrow"><div>模拟未授权（演示）<div class="d">切换后输入功能灰置</div></div><div class="switch" data-switch="simPermission" id="simPermission"></div></div>
+          <button class="btn ghost js-perm-wizard" style="margin-top:8px">打开权限向导</button>
+        </div>
+
+        <div class="card">
+          <div class="h2">关于与诊断</div>
+          <div class="setrow"><div>版本</div><span class="chip val noarrow" style="cursor:default">0.2.0</span></div>
+          <div class="setrow"><div>检查更新</div><button class="mini" id="checkUpdate">检查</button></div>
+          <div class="setrow"><div>诊断日志<div class="d">脱敏，不包含剪贴板内容</div></div><button class="mini" id="exportLogs">导出</button></div>
+        </div>
+      </div>
+
+      <div class="h2" style="margin:22px 0 10px">设备能力位</div>
+      <div id="permDevices"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 托盘菜单 -->
+<div class="tray" id="tray" hidden>
+  <div class="tray-head"><b>跨设备协同</b><span class="pill on" id="trayCount">已连接 2 台</span></div>
+  <div class="tray-row"><span>输入在</span><b id="trayOwner">Linux 4K</b><button class="mini" id="traySwitch">切换</button></div>
+  <div class="tray-row"><span>剪贴板</span><span class="pill on" id="traySyncPill">同步中</span></div>
+  <div class="mini-group" id="trayPauseRow" style="padding:4px 2px 8px">
+    <button data-min="5">暂停 5m</button><button data-min="15">15m</button><button data-min="30">30m</button>
+  </div>
+  <button class="tray-item" id="trayResume" hidden>恢复同步</button>
+  <div class="tray-sep"></div>
+  <button class="tray-item" id="trayOpen">打开主窗口</button>
+  <button class="tray-item" id="trayQuit">退出</button>
+</div>
+
+<!-- 配对向导 -->
+<div class="mask" id="pairMask">
+  <div class="modal wizard" role="dialog" aria-modal="true" aria-labelledby="pairTitle">
+    <div class="wiz-head">
+      <div>
+        <h3 id="pairTitle">添加设备</h3>
+        <p class="sub" id="pairSub">同一网段发现 3 台 · 手动 IP 兜底</p>
+      </div>
+      <div class="steps" id="pairSteps"><i class="on"></i><i></i><i></i></div>
+    </div>
+
+    <div class="wstep on" id="pw1">
+      <div class="discover">
+        <button class="devpick" data-pair-id="mac" data-pair-name="macbook-air-m4">
+          <span class="ico">▥</span>
+          <span class="dpn">macbook-air-m4<small>macOS 15 · M4 · 32GB · 已配对</small></span>
+          <span class="pill on">在线</span>
+        </button>
+        <button class="devpick" data-pair-id="pro" data-pair-name="macbook-pro">
+          <span class="ico">▤</span>
+          <span class="dpn">macbook-pro<small>macOS 14 · M2 Pro · 未配对</small></span>
+          <span class="pill on">在线</span>
+        </button>
+        <button class="devpick" data-pair-id="tp" data-pair-name="thinkpad" disabled>
+          <span class="ico">▭</span>
+          <span class="dpn">thinkpad<small>Windows 11 · 2 小时前在线</small></span>
+          <span class="pill off">离线</span>
+        </button>
+      </div>
+      <div class="manual-row">
+        <span>手动 IP</span>
+        <input class="input" id="manualIp" placeholder="192.168.1.42" aria-label="设备 IP">
+        <button class="mini" id="manualConnect">连接</button>
+      </div>
+      <p class="tip">设备未出现？可能是路由器开启了 AP 隔离。二维码需要摄像头权限，v1 不做。</p>
+      <div class="mact"><button class="btn ghost" id="pairCancel">取消</button></div>
+    </div>
+
+    <div class="wstep" id="pw2">
+      <p class="center">请在两台设备上核对同一个短码</p>
+      <div class="code" id="pairCode"></div>
+      <div class="center sub"><span id="countdown">60 秒后过期</span> · <button class="linkbtn" id="regenCode">重新生成</button></div>
+      <p class="tip center">两端一致才能确认；不一致可能被同一网络中的中间人冒充。</p>
+      <div class="mact">
+        <button class="btn ghost" id="pairBack">返回</button>
+        <button class="btn gold" id="pairConfirm">两端一致，确认配对</button>
+      </div>
+    </div>
+
+    <div class="wstep" id="pw3">
+      <div class="success">✓</div>
+      <h3 class="center">配对成功</h3>
+      <p class="center sub" id="pairSuccessText"></p>
+      <div class="mact"><button class="btn gold" id="pairDone">完成</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- 剪贴板详情 -->
+<div class="mask" id="clipMask">
+  <div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="clipModalTitle">
+    <div class="row" style="justify-content:space-between">
+      <h3 id="clipModalTitle">剪贴板条目</h3>
+      <span class="pill cur" id="clipType">TXT</span>
+    </div>
+    <div class="h2" id="clipTitle" style="margin:12px 0 3px;font-size:13px"></div>
+    <div class="sub" id="clipSrc"></div>
+    <div class="preview" id="clipPreview"></div>
+    <div class="meta-line" id="clipMeta"></div>
+    <div class="setrow">
+      <div>发送到</div>
+      <div class="row">
+        <select class="sel" id="clipSendSel"></select>
+        <button class="mini" id="clipSendBtn">发送</button>
+      </div>
+    </div>
+    <div class="mact">
+      <button class="btn ghost" id="clipPin">固定</button>
+      <button class="btn ghost danger" id="clipDelete">删除</button>
+      <button class="btn gold" data-close="clipMask">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- 设备详情 -->
+<div class="mask" id="deviceMask">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="devTitle">
+    <h3 id="devTitle">设备详情</h3>
+    <p class="sub" id="devSub"></p>
+    <div class="setrow"><div>允许控制输入<div class="d">该设备可接管本机键鼠</div></div><div class="switch on" id="devCapInput"></div></div>
+    <div class="setrow"><div>允许剪贴板<div class="d">文本 / 图片 / 文件引用</div></div><div class="switch on" id="devCapClip"></div></div>
+    <div class="setrow"><div>允许文件传输<div class="d">目录与断点续传</div></div><div class="switch on" id="devCapFile"></div></div>
+    <div class="mact">
+      <button class="btn ghost" data-close="deviceMask">关闭</button>
+      <button class="btn danger" id="devUnpair">解除配对</button>
+    </div>
+  </div>
+</div>
+
+<!-- 权限向导 -->
+<div class="mask" id="permMask">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="permTitle">
+    <h3 id="permTitle">权限向导</h3>
+    <p>本机 linux-4k（Linux X11）；对端 macbook-air-m4（macOS 15）。</p>
+    <div class="perm-list">
+      <div><span>本机 X11 输入捕获/注入</span><span class="pill on" id="permX11">已就绪</span></div>
+      <div><span>本机全局快捷键</span><span class="pill on" id="permShortcut">已就绪</span></div>
+      <div><span>Wayland portal（24.04+）</span><span class="pill off">未启用 · 当前 X11</span></div>
+      <div><span>对端辅助功能</span><span class="pill on" id="permMac">已授权</span></div>
+      <div><span>对端输入监控</span><span class="pill on" id="permMacInput">已授权</span></div>
+      <div><span>对端本地网络（macOS 15+）</span><span class="pill on" id="permMacNetwork">已授权</span></div>
+    </div>
+    <p class="tip">Wayland 需要 24.04+ 的 xdg-desktop-portal + libei/EIS，每次会话可能重新授权。macOS 15 还需“本地网络”用于 mDNS 发现。</p>
+    <div class="mact">
+      <button class="btn ghost" data-close="permMask">稍后</button>
+      <button class="btn gold" id="permOpenSys">打开系统设置</button>
+    </div>
+  </div>
+</div>
+
+<!-- 适配计算 -->
+<div class="mask" id="adaptMask">
+  <div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="adaptTitle">
+    <h3 id="adaptTitle">分辨率适配计算</h3>
+    <p>本机为 Linux X11 4K；对端为 MacBook Air M4。32GB 只是内存配置，不影响屏幕。</p>
+    <div class="calc-table">
+      <div class="th"><b>设备</b><b>原生 / 逻辑</b><b>物理 / 缩放</b></div>
+      <div><span>本机 Linux 4K</span><b>3840×2160 / 1920×1080</b><b>631×360mm · 2.0× · 154 PPI</b></div>
+      <div><span>Air 13.6"</span><b>2560×1664 / 1470×956</b><b>293×183mm · 1.741× · 224 PPI</b></div>
+      <div><span>Air 15.3"</span><b>2880×1864 / 1710×1107</b><b>330×206mm · 1.684× · 224 PPI</b></div>
+    </div>
+    <p class="tip">
+      速度倍率 = (Air 逻辑宽 / Air 物理宽) / (本机逻辑宽 / 本机物理宽)：<br>
+      Air 13.6"：5.017 / 3.043 = <b>1.65×</b>；Air 15.3"：5.182 / 3.043 = <b>1.70×</b>。<br>
+      共享边覆盖 = Air 高 / 本机高：183/360 = <b>50.8%</b>；206/360 = <b>57.2%</b>。<br>
+      指针按 mm/s 归一化，所以物理速度 1:1；逻辑像素倍率只用于注入换算。禁止整屏 0..1 相对映射。
+    </p>
+    <p class="tip">
+      注意：`Xft.dpi=192` 只是 UI 提示，GDK 实际 scale factor 可能不同；macOS 1470×956 是“看起来像”模式，backing 为 2940×1912 后下采样到 2560×1664，不能假设 scale=2.0。两端关闭鼠标加速。
+    </p>
+    <div class="mact"><button class="btn gold" data-close="adaptMask">知道了</button></div>
+  </div>
+</div>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script>
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  const LINUX = {
+    nativeW: 3840, nativeH: 2160,
+    logicalW: 1920, logicalH: 1080,
+    scale: 2.0,
+    wMm: 631, hMm: 360,
+    ppi: 154,
+    logicalPpm: 1920 / 631
+  };
+
+  const MAC_MODELS = {
+    air13: {label:'13.6"', screenName:'MacBook Air 13.6"', native:'2560×1664', logical:'1470×956', scale:1.741, wMm:293, hMm:183, ppi:224, logicalPpm:1470 / 293},
+    air15: {label:'15.3"', screenName:'MacBook Air 15.3"', native:'2880×1864', logical:'1710×1107', scale:1.684, wMm:330, hMm:206, ppi:224, logicalPpm:1710 / 330}
+  };
+
+  const DEVICES = {
+    linux: {name:'linux-4k', short:'Linux 4K', platform:'Linux X11', detail:'4K · 631×360mm', online:true, local:true, icon:'▣'},
+    mac:   {name:'macbook-air-m4', short:'MacBook Air', platform:'macOS 15', detail:'M4 · 32GB · 2560×1664', online:true, local:false, icon:'▥'},
+    tp:    {name:'thinkpad', short:'ThinkPad', platform:'Windows 11', detail:'2 小时前在线', online:false, local:false, icon:'▭'},
+    pro:   {name:'macbook-pro', short:'MacBook Pro', platform:'macOS 14', detail:'M2 Pro · 16GB · 3024×1964', online:true, local:false, icon:'▤'}
+  };
+
+  const state = {
+    owner: 'linux',
+    paired: ['linux', 'mac', 'tp'],
+    inputPermission: true,
+    pausedMinutes: 0,
+    macModel: 'air13',
+    macAlign: 'center',
+    clipFilter: 'all',
+    clipSource: 'all',
+    detailId: null,
+    deviceDetailId: null,
+    pairTarget: null,
+    pairTimer: null,
+    pairSeconds: 60,
+    edgeEnabled: {left:true, right:true, top:true, bottom:true},
+    clips: [
+      {id:1, type:'DIR', kind:'dir', title:'project/ · 128 个文件', meta:['已同步到 macbook-air-m4','1.5 GB','2 分钟前'], src:'linux-4k → macbook-air-m4', pinned:false, preview:'project/\n├─ src/\n│  ├─ main.rs\n│  └─ lib.rs\n├─ empty/\n└─ README.md\n\n目录需完整传输后才能粘贴。本次来源：linux-4k。'},
+      {id:2, type:'TXT', kind:'text', title:"SELECT * FROM users WHERE created_at > '2026-01-01' LIMIT 100;", meta:['自动同步','48 B','5 分钟前'], src:'macbook-air-m4', pinned:false, preview:"SELECT * FROM users\nWHERE created_at > '2026-01-01'\nLIMIT 100;"},
+      {id:3, type:'IMG', kind:'image', title:'screenshot-2026-11-06-104512.png', meta:['可直接粘贴为图片','2.4 MB','12 分钟前'], src:'linux-4k', pinned:false, preview:'[图片预览] 3840×2160 PNG · 2.4 MB'},
+      {id:4, type:'PDF', kind:'file', title:'report-final.pdf', meta:['已落盘 · 可直接粘贴','12 MB','1 小时前'], src:'macbook-air-m4', pinned:false, preview:'[文件] report-final.pdf · 12 MB\n已在本机缓存，可直接粘贴到访达/资源管理器。'},
+      {id:5, type:'FILE', kind:'file', title:'backup.zip', meta:['引用 · 首次粘贴自动接收','1.0 GB','2 小时前'], src:'linux-4k', pinned:true, preview:'[文件引用] backup.zip · 1.0 GB\n超过自动拉取阈值（64 MB），首次粘贴时开始接收。'}
+    ],
+    transfers: [
+      {id:1, name:'project/ → macbook-air-m4', state:'active', pct:78, speed:'112 MB/s', size:'1.17 / 1.5 GB', extra:'目录树 128 项', eta:'预计 3 秒'},
+      {id:2, name:'backup.zip → linux-4k', state:'paused', pct:41, reason:'已暂停 · 网络中断', size:'410 / 1000 MB', extra:'已落盘块 102 个，将只补缺失块'},
+      {id:3, name:'config/ → macbook-air-m4', state:'active', pct:41, speed:'秒传命中 63%', size:'2.1 / 5.0 MB', extra:'1,204 块已存在本地'},
+      {id:4, name:'assets/ → linux-4k', state:'failed', pct:36, reason:'失败 · 目标磁盘不足（需 2.4 GB）', size:'已写入 860 MB / 2.4 GB'}
+    ],
+    completed: [
+      {name:'report.pdf', meta:'12 MB · 2 秒'},
+      {name:'assets/images/ （342 文件）', meta:'88 MB · 9 秒'},
+      {name:'demo.mp4', meta:'620 MB · 6 秒'}
+    ]
+  };
+
+  function toast(msg, tone = 'info'){
+    const box = $('#toasts');
+    const el = document.createElement('div');
+    el.className = 'toast' + (tone === 'warn' ? ' warn' : '');
+    el.textContent = msg;
+    box.appendChild(el);
+    setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .2s'; setTimeout(() => el.remove(), 220); }, 2600);
+  }
+
+  function getMacModel(){ return MAC_MODELS[state.macModel]; }
+  function totalMm(){ return LINUX.wMm + 20 + getMacModel().wMm; }
+
+  /* ---------------- 设备与状态 ---------------- */
+  function renderDevices(){
+    $('#deviceList').innerHTML = state.paired.map(id => {
+      const d = DEVICES[id];
+      const isOwner = state.owner === id;
+      let pill;
+      if (!d.online) pill = '<span class="pill off">离线</span>';
+      else if (isOwner) pill = '<span class="pill cur">输入正在此机</span>';
+      else pill = '<span class="pill off">切换输入</span>';
+      const dot = d.online ? '<span class="dot" title="在线"></span>' : '';
+      return `<div class="dev ${isOwner ? 'active' : ''} ${d.online ? '' : 'offline'}" data-device="${id}">
+        <div class="ico">${d.icon}</div>
+        <div class="meta">
+          <div class="name">${esc(d.name)}${d.local ? '<span class="tag-local">本机</span>' : ''}${dot}</div>
+          <div class="det">${esc(d.platform)} · ${esc(d.detail)}</div>
+        </div>
+        <div class="pills">${pill}</div>
+        <button class="more" data-more="${id}" aria-label="${esc(d.name)} 设备详情">⋯</button>
+      </div>`;
+    }).join('');
+  }
+
+  function renderStatus(){
+    const online = state.paired.filter(id => DEVICES[id].online).length;
+    const paused = state.pausedMinutes > 0;
+    $('#tbStatus').textContent = `已连接 ${online} 台 · 输入在 ${DEVICES[state.owner].short}${paused ? ' · 同步暂停' : ''}`;
+  }
+
+  function renderTray(){
+    const online = state.paired.filter(id => DEVICES[id].online).length;
+    const paused = state.pausedMinutes > 0;
+    $('#trayCount').textContent = `已连接 ${online} 台`;
+    $('#trayOwner').textContent = DEVICES[state.owner].short;
+    $('#traySyncPill').textContent = paused ? `已暂停 ${state.pausedMinutes}m` : '同步中';
+    $('#traySyncPill').className = 'pill ' + (paused ? 'off' : 'on');
+    $('#trayResume').hidden = !paused;
+    $('#trayPauseRow').hidden = paused;
+  }
+
+  function setOwner(id){
+    const d = DEVICES[id];
+    if (!d || !state.paired.includes(id)) return;
+    if (!d.online){ toast(`${d.name} 当前离线，无法切换输入`, 'warn'); return; }
+    if (!state.inputPermission){ toast('输入权限未授予，先完成权限向导', 'warn'); return; }
+    if (state.owner === id){ toast(`输入已在 ${d.short}`); return; }
+    state.owner = id;
+    renderDevices(); renderStatus(); renderTray();
+    toast(`输入已切换到 ${d.short}`);
+  }
+
+  function nextOwner(){
+    if (!state.inputPermission){ toast('输入权限未授予，先完成权限向导', 'warn'); return; }
+    const online = state.paired.filter(id => DEVICES[id].online);
+    if (online.length < 2){ toast('只有一台在线设备，无需切换', 'warn'); return; }
+    const i = online.indexOf(state.owner);
+    state.owner = online[(i + 1) % online.length];
+    renderDevices(); renderStatus(); renderTray();
+    toast(`输入已切换到 ${DEVICES[state.owner].short}`);
+  }
+
+  /* ---------------- 同步暂停 ---------------- */
+  function setPause(minutes){
+    state.pausedMinutes = minutes;
+    renderPause(); renderStatus(); renderTray();
+    toast(`剪贴板同步已暂停 ${minutes} 分钟`);
+  }
+  function resumeSync(){
+    if (!state.pausedMinutes) return;
+    state.pausedMinutes = 0;
+    renderPause(); renderStatus(); renderTray();
+    toast('剪贴板同步已恢复');
+  }
+  function renderPause(){
+    const paused = state.pausedMinutes > 0;
+    $('#pauseBanner').hidden = !paused;
+    $('#pauseText').textContent = paused ? `剪贴板同步已暂停 ${state.pausedMinutes} 分钟` : '';
+    $('#syncState').textContent = paused ? '已暂停 · 恢复' : '同步中';
+    $('#syncState').classList.toggle('on', !paused);
+    $('#quickPause').textContent = paused ? '▶' : '⏸';
+    $('#quickPause').title = paused ? '恢复同步' : '暂停剪贴板同步 15 分钟';
+  }
+
+  /* ---------------- 剪贴板 ---------------- */
+  function renderClips(){
+    const q = $('#clipSearch').value.trim().toLowerCase();
+    const list = state.clips.filter(c => {
+      const typeOk = state.clipFilter === 'all' || c.kind === state.clipFilter;
+      const srcOk = state.clipSource === 'all' || c.src.toLowerCase().includes(state.clipSource);
+      const textOk = !q || (c.title + ' ' + c.src + ' ' + c.meta.join(' ')).toLowerCase().includes(q);
+      return typeOk && srcOk && textOk;
+    }).sort((a, b) => Number(b.pinned) - Number(a.pinned));
+    $('#clipList').innerHTML = list.map(c => `<div class="clip" data-clip="${c.id}">
+      <div class="t">${esc(c.type)}</div>
+      <div class="c">
+        <div class="title">${esc(c.title)}${c.pinned ? '<span class="pin">★</span>' : ''}</div>
+        <div class="meta">${c.meta.map(m => `<span>${esc(m)}</span>`).join('')}</div>
+      </div>
+      <div class="src">${esc(c.src)}</div>
+    </div>`).join('');
+    $('#clipEmpty').innerHTML = state.clips.length === 0
+      ? '暂无剪贴板历史<br><small>复制文本、图片或文件后会出现在这里</small>'
+      : '没有匹配的条目<br><small>换个关键词，或关闭筛选</small>';
+    $('#clipEmpty').hidden = list.length > 0;
+  }
+
+  function openClip(id){
+    const c = state.clips.find(x => x.id === id);
+    if (!c) return;
+    state.detailId = id;
+    $('#clipType').textContent = c.type;
+    $('#clipTitle').textContent = c.title;
+    $('#clipSrc').textContent = '来源：' + c.src;
+    $('#clipPreview').textContent = c.preview;
+    $('#clipPreview').className = 'preview ' + c.kind;
+    $('#clipMeta').innerHTML = c.meta.map(m => `<span>${esc(m)}</span>`).join('');
+    $('#clipPin').textContent = c.pinned ? '已固定 ★' : '固定';
+    const targets = state.paired.filter(id => DEVICES[id].online && !DEVICES[id].local);
+    $('#clipSendSel').innerHTML = targets.length
+      ? targets.map(id => `<option value="${id}">${esc(DEVICES[id].name)}</option>`).join('')
+      : '<option value="">无在线设备</option>';
+    openMask('clipMask');
+  }
+
+  /* ---------------- 传输 ---------------- */
+  function transferCard(t){
+    const cls = t.state === 'paused' ? 'paused' : t.state === 'failed' ? 'failed' : '';
+    const bar = t.state === 'paused' ? 'a' : t.state === 'failed' ? 'r' : 'g';
+    let status;
+    if (t.state === 'paused') status = `<span class="st warn">${esc(t.reason || '已暂停')}</span>`;
+    else if (t.state === 'failed') status = `<span class="st bad">${esc(t.reason || '失败')}</span>`;
+    else status = `<span class="st">${t.pct}% · ${esc(t.speed || '')}${t.eta ? ' · ' + esc(t.eta) : ''}</span>`;
+    let acts;
+    if (t.state === 'paused') acts = '<button class="mini" data-act="resume">继续</button><button class="mini" data-act="cancel">取消</button>';
+    else if (t.state === 'failed') acts = '<button class="mini" data-act="retry">重试</button><button class="mini" data-act="dest">更换目录</button><button class="mini" data-act="cancel">取消</button>';
+    else acts = '<button class="mini" data-act="pause">暂停</button><button class="mini" data-act="cancel">取消</button>';
+    return `<div class="tr ${cls}" data-task="${t.id}">
+      <div class="top"><span class="nm">${esc(t.name)}</span>${status}</div>
+      <div class="bar"><i class="${bar}" style="width:${t.pct}%"></i></div>
+      <div class="bot"><span>${esc(t.size)}${t.extra ? ' · ' + esc(t.extra) : ''}</span><div class="acts">${acts}</div></div>
+    </div>`;
+  }
+
+  function renderTransfers(){
+    const active = state.transfers.filter(t => t.state !== 'done');
+    $('#transActive').innerHTML = active.map(transferCard).join('');
+    $('#transEmpty').hidden = active.length > 0;
+    const paused = active.filter(t => t.state === 'paused').length;
+    const failed = active.filter(t => t.state === 'failed').length;
+    $('#transSummary').textContent = active.length
+      ? `${active.length} 个任务 · ${active.length - paused - failed} 个进行中 · ${paused} 个已暂停 · ${failed} 个失败`
+      : '暂无任务';
+    $('#doneList').innerHTML = state.completed.map(c => `<div class="done">
+      <span><em>✓</em> ${esc(c.name)}</span>
+      <span>${esc(c.meta)} · <button class="linkbtn" data-open>打开所在目录</button> · <button class="linkbtn" data-resend>重新发送</button></span>
+    </div>`).join('');
+  }
+
+  /* ---------------- 设备能力位 ---------------- */
+  function renderPermDevices(){
+    const remote = state.paired.filter(id => !DEVICES[id].local);
+    $('#permDevices').innerHTML = remote.length ? remote.map(id => {
+      const d = DEVICES[id];
+      return `<div class="permcard" data-permdev="${id}">
+        <div class="dp-head">
+          <div><b>${esc(d.name)}</b><div class="sub">${esc(d.platform)} · ${esc(d.detail)}</div></div>
+          <span class="pill ${d.online ? 'on' : 'off'}">${d.online ? '已连接' : '离线'}</span>
+        </div>
+        <div class="setrow"><div>允许控制输入<div class="d">接管本机键鼠</div></div><div class="switch on" data-cap="input"></div></div>
+        <div class="setrow"><div>允许剪贴板<div class="d">文本 / 图片 / 文件引用</div></div><div class="switch on" data-cap="clip"></div></div>
+        <div class="setrow"><div>允许文件传输<div class="d">目录与断点续传</div></div><div class="switch on" data-cap="file"></div></div>
+        <div class="row" style="justify-content:flex-end;margin-top:9px"><button class="mini danger" data-unpair="${id}">解除配对</button></div>
+      </div>`;
+    }).join('') : '<div class="empty">暂无已配对设备<br><small>添加设备后在这里配置能力位</small></div>';
+  }
+
+  function setPillStatus(id, ok, okText, badText){
+    const el = $('#' + id);
+    if (!el) return;
+    el.textContent = ok ? okText : badText;
+    el.className = 'pill ' + (ok ? 'on' : 'bad');
+  }
+
+  function setChipStatus(id, ok, okText, badText){
+    const el = $('#' + id);
+    if (!el) return;
+    el.textContent = ok ? okText : badText;
+    el.classList.toggle('bad', !ok);
+  }
+
+  function renderPermission(){
+    $('#permBanner').hidden = state.inputPermission;
+    $('#simPermission').classList.toggle('on', !state.inputPermission);
+    $('#permDeviceLine').textContent = `本机 linux-4k（Linux X11）· 对端 ${state.paired.includes('mac') ? `macbook-air-m4（macOS 15 · ${getMacModel().label}）` : '未配对'}`;
+    $('#layoutHint').textContent = state.inputPermission
+      ? '光标只在共享边重叠段内穿越；其余为死区。拖动 Air 调整垂直位置，推荐居中。'
+      : '输入权限未授予：可编辑布局，但无法切换输入。剪贴板与文件传输仍可用。';
+    setPillStatus('permX11', state.inputPermission, '已就绪', '未就绪');
+    setPillStatus('permShortcut', true, '已就绪', '未就绪');
+    setPillStatus('permMac', state.inputPermission, '已授权', '未授权');
+    setPillStatus('permMacInput', state.inputPermission, '已授权', '未授权');
+    setPillStatus('permMacNetwork', true, '已授权', '未授权');
+    setChipStatus('setPermX11', state.inputPermission, '已就绪', '未就绪');
+    setChipStatus('setPermShortcut', true, '已就绪', '未就绪');
+    setChipStatus('setPermMac', state.inputPermission, '已授权', '未授权');
+  }
+
+  function unpair(id){
+    if (!DEVICES[id] || DEVICES[id].local) return;
+    state.paired = state.paired.filter(x => x !== id);
+    if (id === 'mac') $('#screen-mac').classList.add('unpaired');
+    if (state.owner === id) state.owner = state.paired.find(x => DEVICES[x].online) || 'linux';
+    renderDevices(); renderStatus(); renderPermDevices(); renderPermission(); renderTray();
+    closeMask('deviceMask');
+    updateEdges();
+    toast(`${DEVICES[id].name} 已解除配对`);
+  }
+
+  function openDevice(id){
+    const d = DEVICES[id];
+    if (!d) return;
+    state.deviceDetailId = id;
+    $('#devTitle').textContent = d.name;
+    let sub = `${d.platform} · ${d.detail}`;
+    if (id === 'linux') sub = 'Linux X11 · 3840×2160 · 631×360mm · 2.0× · 本机设备，无需配对';
+    if (id === 'mac'){
+      const m = getMacModel();
+      sub = `macOS 15 · M4 · 32GB · ${m.native} · ${m.wMm}×${m.hMm}mm · ${m.scale.toFixed(2)}×`;
+    }
+    $('#devSub').textContent = sub;
+    const local = d.local;
+    ['devCapInput','devCapClip','devCapFile'].forEach(k => {
+      const el = $('#' + k);
+      el.classList.toggle('on', true);
+      el.style.opacity = local ? '.4' : '1';
+      el.style.pointerEvents = local ? 'none' : 'auto';
+    });
+    $('#devUnpair').disabled = local;
+    $('#devUnpair').textContent = local ? '本机不可解绑' : '解除配对';
+    openMask('deviceMask');
+  }
+
+  /* ---------------- 布局与边缘 ---------------- */
+  function rectOf(el, canvasRect){
+    const r = el.getBoundingClientRect();
+    return {
+      l: r.left - canvasRect.left, t: r.top - canvasRect.top,
+      r: r.right - canvasRect.left, b: r.bottom - canvasRect.top,
+      w: r.width, h: r.height
+    };
+  }
+
+  function updateScaleBar(){
+    const canvas = $('#canvas');
+    const width = 100 / totalMm() * canvas.clientWidth;
+    $('#scaleBarFill').style.width = width.toFixed(1) + 'px';
+  }
+
+  function updateAlignChips(){
+    $$('#devices [data-align]').forEach(chip => {
+      chip.classList.toggle('on', chip.dataset.align === state.macAlign);
+    });
+  }
+
+  function applyMacModel(){
+    const m = getMacModel();
+    DEVICES.mac.detail = `M4 · 32GB · ${m.native}`;
+    const total = totalMm();
+    const linuxPct = LINUX.wMm / total * 100;
+    const gapPct = 20 / total * 100;
+    const macPct = m.wMm / total * 100;
+    $('#screen-linux').style.setProperty('--w', linuxPct + '%');
+    $('#screen-linux').style.left = '0%';
+    $('#screen-mac').style.setProperty('--w', macPct + '%');
+    $('#screen-mac').style.left = (linuxPct + gapPct) + '%';
+    $('#screen-mac').style.setProperty('--ratio', `${m.wMm}/${m.hMm}`);
+    $('#macScreenName').textContent = m.screenName;
+    $('#macDetail').textContent = `${m.native} · ${m.wMm}×${m.hMm}mm · ${m.scale.toFixed(2)}×`;
+    $('#macModel').value = state.macModel;
+    renderDevices();
+    renderPermDevices();
+    renderAdaptation();
+    fitLayout();
+  }
+
+  function fitLayout(){
+    const canvas = $('#canvas');
+    const ch = canvas.clientHeight;
+    const l = $('#screen-linux');
+    const m = $('#screen-mac');
+    const lh = l.offsetHeight;
+    const mh = m.offsetHeight;
+    if (state.macAlign === 'center'){
+      const lt = (ch - lh) / 2;
+      const mt = lt + (lh - mh) / 2;
+      l.style.top = lt + 'px';
+      m.style.top = mt + 'px';
+    } else if (state.macAlign === 'top'){
+      l.style.top = '24px';
+      m.style.top = '24px';
+    } else if (state.macAlign === 'bottom'){
+      l.style.top = (ch - lh - 24) + 'px';
+      m.style.top = (ch - mh - 24) + 'px';
+    } else {
+      const cr = canvas.getBoundingClientRect();
+      const lr = l.getBoundingClientRect();
+      const mr = m.getBoundingClientRect();
+      const lt = Math.max(0, Math.min(ch - lh, lr.top - cr.top));
+      const mt = Math.max(0, Math.min(ch - mh, mr.top - cr.top));
+      l.style.top = lt + 'px';
+      m.style.top = mt + 'px';
+    }
+    updateScaleBar();
+    updateAlignChips();
+    updateEdges();
+  }
+
+  function applyAlign(mode, silent){
+    state.macAlign = mode;
+    fitLayout();
+    if (!silent) toast(mode === 'center' ? '已应用推荐布局：Air 垂直居中' : `已将 Air 对齐到${mode === 'top' ? '顶部' : '底部'}`);
+  }
+
+  function renderAdaptation(actualCoverage){
+    const m = getMacModel();
+    const paired = state.paired.includes('mac');
+    const theoretical = m.hMm / LINUX.hMm * 100;
+    const speed = m.logicalPpm / LINUX.logicalPpm;
+    $('#adaptLogical').textContent = m.logical;
+    $('#adaptSize').textContent = `${m.wMm}×${m.hMm}mm`;
+    $('#adaptScale').textContent = m.scale.toFixed(2) + '×';
+    $('#adaptCoverage').textContent = theoretical.toFixed(1) + '%';
+    $('#adaptSpeed').textContent = speed.toFixed(2) + '×';
+    $('#adaptPpi').textContent = m.ppi;
+    const status = $('#adaptStatus');
+    const ok = paired && (actualCoverage === undefined || actualCoverage >= theoretical * 0.8);
+    status.textContent = !paired ? '不可用' : (ok ? '通过' : '需调整');
+    status.className = 'pill ' + (!paired ? 'off' : (ok ? 'on' : 'bad'));
+    const actualText = $('#adaptActualText');
+    if (!paired){
+      actualText.textContent = '对端已解绑，布局仅保留占位';
+    } else if (actualCoverage === undefined){
+      actualText.textContent = `理论共享段 ${m.hMm}mm / ${LINUX.hMm}mm`;
+    } else if (actualCoverage <= 0){
+      actualText.textContent = '当前未相邻或重叠，共享边不可用';
+    } else {
+      actualText.textContent = `当前有效共享段 ${actualCoverage.toFixed(1)}%`;
+    }
+  }
+
+  function updateEdges(){
+    const canvas = $('#canvas');
+    const edge = $('#edgeIndicator');
+    edge.style.display = 'none';
+    edge.classList.remove('h');
+    edge.style.width = '0';
+    edge.style.height = '0';
+    $('#layoutWarn').hidden = true;
+
+    if (!state.paired.includes('mac')){
+      $('#label-linux').textContent = '未连接 · 添加设备后拖入布局';
+      $('#label-mac').textContent = 'MACBOOK AIR 已解绑';
+      $('#sharedEdgeLabel').textContent = '共享边：无';
+      setEdgeChips([]);
+      renderAdaptation(0);
+      return;
+    }
+
+    const cr = canvas.getBoundingClientRect();
+    const a = rectOf($('#screen-linux'), cr);
+    const b = rectOf($('#screen-mac'), cr);
+    const tol = Math.max(18, 24 / totalMm() * cr.width);
+    const overlapX = Math.min(a.r, b.r) - Math.max(a.l, b.l);
+    const overlapY = Math.min(a.b, b.b) - Math.max(a.t, b.t);
+    let dir = null;
+
+    if (overlapX > 8 && overlapY > 8){
+      $('#layoutWarn').hidden = false;
+      $('#label-linux').textContent = '屏幕重叠 · 请拖开';
+      $('#label-mac').textContent = '屏幕重叠 · 请拖开';
+      $('#sharedEdgeLabel').textContent = '共享边：无（屏幕重叠）';
+      setEdgeChips([]);
+      renderAdaptation(0);
+      return;
+    }
+
+    if (Math.abs(b.l - a.r) <= tol && overlapY > Math.min(a.h, b.h) * .25) dir = 'right';
+    else if (Math.abs(a.l - b.r) <= tol && overlapY > Math.min(a.h, b.h) * .25) dir = 'left';
+    else if (Math.abs(b.t - a.b) <= tol && overlapX > Math.min(a.w, b.w) * .25) dir = 'down';
+    else if (Math.abs(a.t - b.b) <= tol && overlapX > Math.min(a.w, b.w) * .25) dir = 'up';
+
+    if (!dir){
+      $('#label-linux').textContent = '未连接 · 拖到相邻位置';
+      $('#label-mac').textContent = '未连接 · 拖到相邻位置';
+      $('#sharedEdgeLabel').textContent = '共享边：无';
+      setEdgeChips([]);
+      renderAdaptation(0);
+      return;
+    }
+
+    const pxPerMm = cr.width / totalMm();
+    const edgeOverlapPx = (dir === 'right' || dir === 'left') ? overlapY : overlapX;
+    const edgeDenom = (dir === 'right' || dir === 'left') ? LINUX.hMm : LINUX.wMm;
+    const fullPx = (dir === 'right' || dir === 'left') ? Math.min(a.h, b.h) : Math.min(a.w, b.w);
+    const fullMm = (dir === 'right' || dir === 'left')
+      ? (b.h <= a.h ? getMacModel().hMm : LINUX.hMm)
+      : (b.w <= a.w ? getMacModel().wMm : LINUX.wMm);
+    const isFull = edgeOverlapPx >= fullPx - 2;
+    const overlapMm = isFull ? fullMm : edgeOverlapPx / pxPerMm;
+    const coverage = Math.min(100, Math.max(0, overlapMm / edgeDenom * 100));
+    let shared = [];
+    if (dir === 'right'){
+      $('#label-linux').textContent = '↔ 右侧连接 MACBOOK AIR';
+      $('#label-mac').textContent = '↔ 左侧连接 LINUX 4K';
+      $('#sharedEdgeLabel').textContent = `共享边：Linux 右 ↔ Air 左 · ${Math.round(overlapMm)}/${edgeDenom}mm（${coverage.toFixed(1)}%）`;
+      shared = ['right','left'];
+      edge.classList.add('v');
+      edge.style.display = 'block';
+      edge.style.left = (a.r + (b.l - a.r) / 2) + 'px';
+      edge.style.top = Math.max(a.t, b.t) + 'px';
+      edge.style.height = overlapY + 'px';
+      edge.style.width = '2px';
+    } else if (dir === 'left'){
+      $('#label-linux').textContent = '↔ 左侧连接 MACBOOK AIR';
+      $('#label-mac').textContent = '↔ 右侧连接 LINUX 4K';
+      $('#sharedEdgeLabel').textContent = `共享边：Linux 左 ↔ Air 右 · ${Math.round(overlapMm)}/${edgeDenom}mm（${coverage.toFixed(1)}%）`;
+      shared = ['left','right'];
+      edge.classList.add('v');
+      edge.style.display = 'block';
+      edge.style.left = (b.r + (a.l - b.r) / 2) + 'px';
+      edge.style.top = Math.max(a.t, b.t) + 'px';
+      edge.style.height = overlapY + 'px';
+      edge.style.width = '2px';
+    } else if (dir === 'down'){
+      $('#label-linux').textContent = '↓ 下方连接 MACBOOK AIR';
+      $('#label-mac').textContent = '↑ 上方连接 LINUX 4K';
+      $('#sharedEdgeLabel').textContent = `共享边：Linux 下 ↔ Air 上 · ${Math.round(overlapMm)}/${edgeDenom}mm（${coverage.toFixed(1)}%）`;
+      shared = ['bottom','top'];
+      edge.classList.add('h');
+      edge.style.display = 'block';
+      edge.style.left = Math.max(a.l, b.l) + 'px';
+      edge.style.top = (a.b + (b.t - a.b) / 2) + 'px';
+      edge.style.width = overlapX + 'px';
+      edge.style.height = '2px';
+    } else {
+      $('#label-linux').textContent = '↑ 上方连接 MACBOOK AIR';
+      $('#label-mac').textContent = '↓ 下方连接 LINUX 4K';
+      $('#sharedEdgeLabel').textContent = `共享边：Linux 上 ↔ Air 下 · ${Math.round(overlapMm)}/${edgeDenom}mm（${coverage.toFixed(1)}%）`;
+      shared = ['top','bottom'];
+      edge.classList.add('h');
+      edge.style.display = 'block';
+      edge.style.left = Math.max(a.l, b.l) + 'px';
+      edge.style.top = (b.b + (a.t - b.b) / 2) + 'px';
+      edge.style.width = overlapX + 'px';
+      edge.style.height = '2px';
+    }
+    setEdgeChips(shared);
+    renderAdaptation(coverage);
+  }
+
+  function setEdgeChips(shared){
+    $$('#devices [data-edge]').forEach(chip => {
+      const d = chip.dataset.edge;
+      const isShared = shared.includes(d);
+      chip.classList.toggle('disabled', !isShared);
+      chip.classList.toggle('on', isShared && state.edgeEnabled[d] !== false);
+      chip.setAttribute('aria-disabled', String(!isShared));
+    });
+  }
+
+  /* ---------------- 配对向导 ---------------- */
+  function pairStep(n){
+    [1,2,3].forEach(i => $('#pw' + i).classList.toggle('on', i === n));
+    $$('#pairSteps i').forEach((el, i) => el.classList.toggle('on', i < n));
+    $('#pairSub').textContent = n === 1 ? '同一网段发现 3 台 · 手动 IP 兜底' : n === 2 ? '两端核对短码' : '完成';
+    if (n !== 2) clearInterval(state.pairTimer);
+  }
+
+  function genCode(){
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    $('#pairCode').innerHTML = [...code].map(d => `<span>${d}</span>`).join('');
+  }
+
+  function startCountdown(){
+    clearInterval(state.pairTimer);
+    state.pairSeconds = 60;
+    $('#pairConfirm').disabled = false;
+    const tick = () => {
+      $('#countdown').textContent = state.pairSeconds > 0 ? `${state.pairSeconds} 秒后过期` : '短码已过期，请重新生成';
+      if (state.pairSeconds <= 0){
+        clearInterval(state.pairTimer);
+        $('#pairConfirm').disabled = true;
+        return;
+      }
+      state.pairSeconds--;
+    };
+    tick();
+    state.pairTimer = setInterval(tick, 1000);
+  }
+
+  function renderPairDiscovery(){
+    const mac = $('[data-pair-id="mac"]');
+    const pro = $('[data-pair-id="pro"]');
+    if (mac) mac.querySelector('small').textContent = state.paired.includes('mac') ? 'macOS 15 · M4 · 32GB · 已配对' : 'macOS 15 · M4 · 32GB · 未配对';
+    if (pro) pro.querySelector('small').textContent = state.paired.includes('pro') ? 'macOS 14 · M2 Pro · 已配对' : 'macOS 14 · M2 Pro · 未配对';
+  }
+
+  function openPair(){
+    state.pairTarget = null;
+    $('#manualIp').value = '';
+    pairStep(1);
+    genCode();
+    renderPairDiscovery();
+    openMask('pairMask');
+  }
+
+  function closePair(){
+    clearInterval(state.pairTimer);
+    state.pairTimer = null;
+    closeMask('pairMask');
+    pairStep(1);
+  }
+
+  function selectPairTarget(id, name){
+    state.pairTarget = {id, name};
+    genCode();
+    pairStep(2);
+    startCountdown();
+  }
+
+  function confirmPair(){
+    if (!state.pairTarget) return;
+    const {id, name} = state.pairTarget;
+    const existed = state.paired.includes(id);
+    if (id === 'manual' && !DEVICES[id]){
+      DEVICES[id] = {name, short:name, platform:'手动 IP', detail:'未上报屏幕信息', online:true, local:false, icon:'◇'};
+    }
+    if (DEVICES[id] && !existed) state.paired.push(id);
+    if (id === 'mac') $('#screen-mac').classList.remove('unpaired');
+    pairStep(3);
+    $('#pairSuccessText').textContent = existed
+      ? `${name} 已在白名单，本次重新确认了证书指纹。`
+      : `${name} 已加入白名单，之后会自动重连。`;
+    renderDevices(); renderStatus(); renderPermDevices(); renderPermission(); renderTray();
+    updateEdges();
+    toast(`${name} 配对成功`);
+  }
+
+  /* ---------------- 弹窗与托盘 ---------------- */
+  function openMask(id){ $('#' + id).classList.add('on'); }
+  function closeMask(id){ $('#' + id).classList.remove('on'); }
+
+  function toggleTray(force){
+    const tray = $('#tray');
+    tray.hidden = force === undefined ? !tray.hidden : !force;
+  }
+
+  function activateTab(btn){
+    $$('.tab').forEach(t => {
+      t.classList.toggle('on', t === btn);
+      t.setAttribute('aria-selected', String(t === btn));
+    });
+    $$('.page').forEach(p => p.classList.toggle('on', p.id === btn.dataset.p));
+  }
+
+  /* ---------------- 事件绑定 ---------------- */
+  $$('.tab').forEach(t => t.addEventListener('click', () => activateTab(t)));
+
+  $('#deviceList').addEventListener('click', e => {
+    const more = e.target.closest('[data-more]');
+    if (more){ openDevice(more.dataset.more); return; }
+    const row = e.target.closest('[data-device]');
+    if (row) setOwner(row.dataset.device);
+  });
+
+  $('#addDeviceBtn').addEventListener('click', openPair);
+
+  $('#logoTray').addEventListener('click', e => { e.stopPropagation(); toggleTray(); });
+  $('#tray').addEventListener('click', e => e.stopPropagation());
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#tray') && !e.target.closest('#logoTray')) toggleTray(false);
+  });
+
+  $('#traySwitch').addEventListener('click', nextOwner);
+  $$('#trayPauseRow [data-min]').forEach(b => b.addEventListener('click', () => setPause(Number(b.dataset.min))));
+  $('#trayResume').addEventListener('click', resumeSync);
+  $('#trayOpen').addEventListener('click', () => { toggleTray(false); activateTab($('.tab[data-p="devices"]')); });
+  $('#trayQuit').addEventListener('click', () => { toggleTray(false); toast('演示模式不退出'); });
+
+  $('#quickPause').addEventListener('click', () => { state.pausedMinutes ? resumeSync() : setPause(15); });
+  $('#syncState').addEventListener('click', () => { state.pausedMinutes ? resumeSync() : setPause(15); });
+  $('#pauseResume').addEventListener('click', resumeSync);
+
+  $('#clipSearch').addEventListener('input', renderClips);
+  $('#clipFilters').addEventListener('click', e => {
+    const chip = e.target.closest('[data-type]');
+    if (!chip) return;
+    state.clipFilter = chip.dataset.type;
+    $$('#clipFilters [data-type]').forEach(c => c.classList.toggle('on', c === chip));
+    renderClips();
+  });
+  $('#clipSource').addEventListener('change', e => { state.clipSource = e.target.value; renderClips(); });
+
+  $('#clipList').addEventListener('click', e => {
+    const row = e.target.closest('[data-clip]');
+    if (row) openClip(Number(row.dataset.clip));
+  });
+
+  $('#clipPin').addEventListener('click', () => {
+    const c = state.clips.find(x => x.id === state.detailId);
+    if (!c) return;
+    c.pinned = !c.pinned;
+    $('#clipPin').textContent = c.pinned ? '已固定 ★' : '固定';
+    renderClips();
+    toast(c.pinned ? '已固定该条目' : '已取消固定');
+  });
+
+  $('#clipDelete').addEventListener('click', () => {
+    state.clips = state.clips.filter(x => x.id !== state.detailId);
+    closeMask('clipMask');
+    renderClips();
+    toast('条目已删除');
+  });
+
+  $('#clipSendBtn').addEventListener('click', () => {
+    const id = $('#clipSendSel').value;
+    if (!id){ toast('没有在线设备可发送', 'warn'); return; }
+    toast(`已发送到 ${DEVICES[id].name}`);
+  });
+
+  $('#transActive').addEventListener('click', e => {
+    const btn = e.target.closest('[data-act]');
+    if (!btn) return;
+    const card = e.target.closest('[data-task]');
+    const t = state.transfers.find(x => x.id === Number(card.dataset.task));
+    if (!t) return;
+    const act = btn.dataset.act;
+    if (act === 'pause'){ t.state = 'paused'; t.reason = '已暂停（用户）'; toast('传输已暂停'); }
+    if (act === 'resume'){ t.state = 'active'; t.reason = ''; t.speed = t.speed || '112 MB/s'; toast('传输已继续'); }
+    if (act === 'cancel'){
+      state.transfers = state.transfers.filter(x => x.id !== t.id);
+      toast('传输已取消');
+    }
+    if (act === 'retry'){ t.state = 'active'; t.reason = ''; t.pct = Math.max(t.pct, 5); t.speed = '重试中…'; t.eta = ''; toast('正在重试传输'); }
+    if (act === 'dest'){ toast('选择新的目标目录（演示）'); }
+    renderTransfers();
+  });
+
+  $('#doneList').addEventListener('click', e => {
+    if (e.target.closest('[data-open]')) toast('已打开所在目录（演示）');
+    if (e.target.closest('[data-resend]')) toast('已加入重新发送队列（演示）');
+  });
+
+  $('#permDevices').addEventListener('click', e => {
+    const sw = e.target.closest('.switch[data-cap]');
+    if (sw){ sw.classList.toggle('on'); toast('能力位已更新'); return; }
+    const un = e.target.closest('[data-unpair]');
+    if (un) unpair(un.dataset.unpair);
+  });
+
+  $$('.switch').forEach(sw => {
+    sw.addEventListener('click', () => {
+      if (sw.dataset.switch === 'simPermission'){
+        sw.classList.toggle('on');
+        state.inputPermission = !sw.classList.contains('on');
+        renderPermission();
+        toast(state.inputPermission ? '输入权限已恢复（演示）' : '已模拟权限未授予：输入功能不可用', state.inputPermission ? 'info' : 'warn');
+        return;
+      }
+      if (sw.id && sw.id.indexOf('devCap') === 0) return;
+      sw.classList.toggle('on');
+    });
+  });
+
+  $$('.js-perm-wizard, [data-perm], #bannerFix').forEach(el => el.addEventListener('click', () => openMask('permMask')));
+  $('#permOpenSys').addEventListener('click', () => toast('已打开系统设置（演示）；Linux X11 无需额外授权，macOS 对端请检查辅助功能/输入监控/本地网络'));
+
+  $$('[data-close]').forEach(btn => btn.addEventListener('click', () => closeMask(btn.dataset.close)));
+
+  $$('.mask').forEach(m => m.addEventListener('click', e => {
+    if (e.target !== m) return;
+    if (m.id === 'pairMask') closePair();
+    else closeMask(m.id);
+  }));
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape'){
+      if ($('#pairMask').classList.contains('on')) closePair();
+      else $$('.mask.on').forEach(m => closeMask(m.id));
+      toggleTray(false);
+    }
+  });
+
+  $('#devCapInput').addEventListener('click', e => { if (e.currentTarget.style.pointerEvents !== 'none'){ e.currentTarget.classList.toggle('on'); toast('能力位已更新'); } });
+  $('#devCapClip').addEventListener('click', e => { if (e.currentTarget.style.pointerEvents !== 'none'){ e.currentTarget.classList.toggle('on'); toast('能力位已更新'); } });
+  $('#devCapFile').addEventListener('click', e => { if (e.currentTarget.style.pointerEvents !== 'none'){ e.currentTarget.classList.toggle('on'); toast('能力位已更新'); } });
+  $('#devUnpair').addEventListener('click', () => { if (!$('#devUnpair').disabled) unpair(state.deviceDetailId); });
+
+  $$('[data-toast]').forEach(el => el.addEventListener('click', () => toast(el.dataset.toast)));
+  $$('[data-cycle]').forEach(el => el.addEventListener('click', () => {
+    const vals = el.dataset.cycle.split('|');
+    const cur = vals.indexOf(el.textContent.trim());
+    const next = vals[(cur + 1) % vals.length];
+    el.textContent = next;
+    toast(`${el.dataset.label || '设置'}：${next}`);
+  }));
+  $('#langSelect').addEventListener('change', e => toast(`语言已切换为 ${e.target.value}（演示）`));
+  $('#checkUpdate').addEventListener('click', () => toast('已是最新版本 0.2.0'));
+  $('#exportLogs').addEventListener('click', () => toast('诊断包已导出（演示，不含剪贴板内容）'));
+  $('#clearData').addEventListener('click', () => {
+    state.clips = [];
+    renderClips();
+    toast('本地剪贴板历史与缓存已清除（演示）');
+  });
+
+  /* 配对向导 */
+  $$('#pw1 .devpick').forEach(pick => pick.addEventListener('click', () => {
+    if (pick.disabled) return;
+    selectPairTarget(pick.dataset.pairId, pick.dataset.pairName);
+  }));
+  $('#manualConnect').addEventListener('click', () => {
+    const ip = $('#manualIp').value.trim();
+    if (!ip){ toast('请输入设备 IP', 'warn'); return; }
+    selectPairTarget('manual', ip);
+  });
+  $('#manualIp').addEventListener('keydown', e => { if (e.key === 'Enter') $('#manualConnect').click(); });
+  $('#regenCode').addEventListener('click', () => { genCode(); startCountdown(); toast('已重新生成短码'); });
+  $('#pairBack').addEventListener('click', () => { clearInterval(state.pairTimer); pairStep(1); });
+  $('#pairCancel').addEventListener('click', closePair);
+  $('#pairConfirm').addEventListener('click', confirmPair);
+  $('#pairDone').addEventListener('click', closePair);
+
+  /* 适配与模型 */
+  $('#macModel').addEventListener('change', e => {
+    state.macModel = e.target.value;
+    applyMacModel();
+    toast(`对端已切换为 ${getMacModel().screenName}；指标已重算`);
+  });
+  $('#adaptDetail').addEventListener('click', () => openMask('adaptMask'));
+  $('#applyAdapt').addEventListener('click', () => applyAlign('center'));
+
+  $$('#devices [data-align]').forEach(chip => chip.addEventListener('click', () => applyAlign(chip.dataset.align)));
+
+  /* 布局拖动 */
+  let drag = null;
+  $$('.screen').forEach(el => el.addEventListener('pointerdown', e => {
+    if (e.button !== 0) return;
+    state.macAlign = 'custom';
+    updateAlignChips();
+    const c = $('#canvas').getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+    drag = {el, ox:e.clientX - r.left, oy:e.clientY - r.top};
+    el.classList.add('dragging');
+    e.preventDefault();
+  }));
+  window.addEventListener('pointermove', e => {
+    if (!drag) return;
+    const c = $('#canvas').getBoundingClientRect();
+    let left = ((e.clientX - c.left - drag.ox) / c.width) * 100;
+    let top = ((e.clientY - c.top - drag.oy) / c.height) * 100;
+    const maxLeft = 100 - (drag.el.offsetWidth / c.width) * 100;
+    const maxTop = 100 - (drag.el.offsetHeight / c.height) * 100;
+    left = Math.max(0, Math.min(maxLeft, left));
+    top = Math.max(0, Math.min(maxTop, top));
+    drag.el.style.left = (Math.round(left * 2) / 2) + '%';
+    drag.el.style.top = (Math.round(top * 2) / 2) + '%';
+    updateEdges();
+  });
+  window.addEventListener('pointerup', () => {
+    if (!drag) return;
+    drag.el.classList.remove('dragging');
+    drag = null;
+    updateEdges();
+  });
+
+  $$('#devices [data-edge]').forEach(chip => chip.addEventListener('click', () => {
+    const d = chip.dataset.edge;
+    if (chip.classList.contains('disabled')){ toast('该方向没有相邻屏幕', 'warn'); return; }
+    state.edgeEnabled[d] = !state.edgeEnabled[d];
+    chip.classList.toggle('on', state.edgeEnabled[d]);
+    toast(`${chip.textContent}边缘穿越${state.edgeEnabled[d] ? '已启用' : '已关闭'}`);
+  }));
+
+  $('#resetLayout').addEventListener('click', () => {
+    state.macAlign = 'center';
+    applyMacModel();
+    toast('布局已重置为物理比例 + 垂直居中');
+  });
+  $('#detectScreens').addEventListener('click', () => toast('已检测到本机 1 块屏 + 对端 1 块屏（演示）'));
+
+  let resizeTimer = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      if (state.macAlign !== 'custom') fitLayout();
+      else { fitLayout(); }
+    }, 80);
+  });
+
+  /* 初始化 */
+  renderDevices();
+  renderStatus();
+  renderClips();
+  renderTransfers();
+  renderPermDevices();
+  renderPermission();
+  renderPause();
+  renderTray();
+  applyMacModel();
+  fitLayout();
+</script>
+</body>
+</html>

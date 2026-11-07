@@ -1,0 +1,13 @@
+[package]
+name = "cd-clipboard"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "Clipboard content model, loop prevention, history and policies"
+
+[dependencies]
+cd-proto.workspace = true
+blake3.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true

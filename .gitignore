@@ -1,0 +1,10 @@
+/target
+**/*.rs.bk
+.DS_Store
+.idea/
+.vscode/
+.screenshots/
+crates/cd-ui/dist/
+crates/cd-ui/binaries/
+*.cdpart
+*.log

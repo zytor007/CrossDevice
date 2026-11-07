@@ -1,0 +1,17 @@
+[package]
+name = "cd-transport"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "QUIC/TLS transport for C0 control and C1 input channels"
+
+[dependencies]
+cd-proto.workspace = true
+thiserror.workspace = true
+serde_json.workspace = true
+rcgen.workspace = true
+rustls.workspace = true
+quinn.workspace = true
+tokio.workspace = true
+sha2.workspace = true
+bytes.workspace = true

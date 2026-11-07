@@ -1,0 +1,9 @@
+[package]
+name = "cd-geometry"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "Pure physical-millimetre geometry for cross-device screen layouts"
+
+[dependencies]
+serde.workspace = true

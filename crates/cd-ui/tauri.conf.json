@@ -1,0 +1,37 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Crossdev",
+  "version": "0.1.0",
+  "identifier": "dev.crossdev.shell",
+  "build": {
+    "frontendDist": "web",
+    "beforeBuildCommand": "bash cd-ui/scripts/stage.sh"
+  },
+  "app": {
+    "windows": [],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["deb"],
+    "category": "Utility",
+    "shortDescription": "跨设备协同控制台",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.png",
+      "icons/icon.ico"
+    ],
+    "linux": {
+      "deb": {
+        "files": {
+          "/usr/bin/crossdev": "dist/crossdev",
+          "/usr/lib/systemd/user/crossdev.service": "packaging/crossdev.service"
+        }
+      }
+    }
+  }
+}

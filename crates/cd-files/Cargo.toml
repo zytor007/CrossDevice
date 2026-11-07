@@ -1,0 +1,13 @@
+[package]
+name = "cd-files"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "Directory manifests, cross-platform path safety, conflicts and transfer tasks"
+
+[dependencies]
+blake3.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+unicode-normalization.workspace = true
+walkdir.workspace = true

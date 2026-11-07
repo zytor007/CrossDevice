@@ -1,0 +1,13 @@
+[package]
+name = "cd-proto"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "Wire protocol types, C1 input event codec, pairing SAS and error codes"
+
+[dependencies]
+cd-geometry.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+blake3.workspace = true
+thiserror.workspace = true

@@ -1,0 +1,13 @@
+[Unit]
+Description=Crossdev headless daemon
+Documentation=https://localhost:7824/
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/crossdev daemon run
+Restart=on-failure
+RestartSec=2s
+
+[Install]
+WantedBy=default.target

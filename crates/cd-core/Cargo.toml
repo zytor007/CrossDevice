@@ -1,0 +1,11 @@
+[package]
+name = "cd-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "Session orchestration: layout state and input ownership state machine"
+
+[dependencies]
+cd-geometry.workspace = true
+cd-proto.workspace = true
+thiserror.workspace = true

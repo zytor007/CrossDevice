@@ -1,0 +1,56 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/cd-geometry",
+    "crates/cd-proto",
+    "crates/cd-core",
+    "crates/cd-platform",
+    "crates/cd-input",
+    "crates/cd-transport",
+    "crates/cd-clipboard",
+    "crates/cd-files",
+    "crates/cd-store",
+    "crates/cd-sync",
+    "crates/cd-daemon",
+    "crates/cd-ui",
+]
+default-members = ["crates/cd-daemon"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.80"
+
+[workspace.dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+blake3 = "1.5"
+thiserror = "2.0"
+clap = { version = "4.5", features = ["derive"] }
+tokio = { version = "1.40", features = ["rt-multi-thread", "macros", "time", "sync", "net", "signal", "io-util"] }
+quinn = { version = "0.11", default-features = false, features = ["runtime-tokio", "rustls-ring"] }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std"] }
+rcgen = "0.13"
+sha2 = "0.10"
+bytes = "1"
+unicode-normalization = "0.1"
+walkdir = "2"
+rusqlite = { version = "0.32", features = ["bundled"] }
+getrandom = "0.2"
+socket2 = "0.6"
+
+cd-geometry = { path = "crates/cd-geometry" }
+cd-proto = { path = "crates/cd-proto" }
+cd-core = { path = "crates/cd-core" }
+cd-platform = { path = "crates/cd-platform" }
+cd-input = { path = "crates/cd-input" }
+cd-transport = { path = "crates/cd-transport" }
+cd-clipboard = { path = "crates/cd-clipboard" }
+cd-files = { path = "crates/cd-files" }
+cd-store = { path = "crates/cd-store" }
+cd-sync = { path = "crates/cd-sync" }
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true

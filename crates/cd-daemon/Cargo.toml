@@ -1,0 +1,28 @@
+[package]
+name = "cd-daemon"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "Headless cross-device daemon and diagnostic CLI"
+
+[[bin]]
+name = "crossdev"
+path = "src/main.rs"
+
+[dependencies]
+cd-geometry.workspace = true
+cd-proto.workspace = true
+cd-core.workspace = true
+cd-platform.workspace = true
+cd-input.workspace = true
+cd-transport.workspace = true
+cd-clipboard.workspace = true
+cd-files.workspace = true
+cd-store.workspace = true
+cd-sync.workspace = true
+blake3.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+clap.workspace = true
+tokio.workspace = true
+socket2.workspace = true

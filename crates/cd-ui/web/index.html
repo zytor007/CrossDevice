@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Crossdev</title>
+    <style>
+      :root { color-scheme: dark; }
+      body {
+        margin: 0; min-height: 100vh; display: grid; place-items: center;
+        background: #090e16; color: #e6edf7;
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+      .card {
+        max-width: 460px; padding: 28px 32px; border-radius: 16px;
+        border: 1px solid rgba(94, 242, 199, 0.25); background: #111925;
+      }
+      h1 { margin: 0 0 10px; font-size: 24px; }
+      p { margin: 0 0 14px; color: #91a3bb; line-height: 1.7; font-size: 13px; }
+      code { color: #5ef2c7; font-family: ui-monospace, monospace; }
+      button {
+        padding: 9px 16px; border-radius: 10px; cursor: pointer;
+        border: 1px solid rgba(94, 242, 199, 0.4); color: #e6edf7;
+        background: linear-gradient(180deg, rgba(94, 242, 199, 0.15), rgba(94, 242, 199, 0.05));
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>Crossdev 桌面壳</h1>
+      <p>控制台地址 <code id="console"></code> 暂不可用。请先启动守护进程：</p>
+      <p><code>crossdev daemon run</code></p>
+      <p>可用环境变量 <code>CROSSDEV_CONSOLE</code> 指向其他 daemon 地址。</p>
+      <button onclick="location.reload()">重新连接</button>
+    </div>
+    <script>
+      fetch("http://127.0.0.1:7824/api/status")
+        .then(() => { location.href = "http://127.0.0.1:7824/"; })
+        .catch(() => {
+          document.getElementById("console").textContent = "http://127.0.0.1:7824/";
+        });
+    </script>
+  </body>
+</html>
