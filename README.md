@@ -6,6 +6,7 @@
 
 ![rust](https://img.shields.io/badge/rust-1.80%2B-orange)
 ![license](https://img.shields.io/badge/license-MIT-green)
+[![release](https://img.shields.io/github/v/release/zytor007/CrossDevice?include_prereleases&label=release)](https://github.com/zytor007/CrossDevice/releases)
 ![platform](https://img.shields.io/badge/platform-Linux%20X11%20%7C%20Windows%20check%20%7C%20macOS%20planned-lightgrey)
 
 ![Crossdev 控制台](docs/images/dashboard.png)
@@ -122,6 +123,8 @@ cargo build -p cd-ui --release
 桌面壳默认连接 `http://127.0.0.1:7824/`；若 daemon 未运行，会优先拉起同目录的 `crossdev`。可用 `CROSSDEV_CONSOLE` 指向其他控制台地址。
 
 ### Debian 安装包
+
+也可以直接从 [Releases](https://github.com/zytor007/CrossDevice/releases) 下载已构建的 `Crossdev_0.1.0_amd64.deb`。
 
 ```bash
 cargo install tauri-cli --version "^2"
